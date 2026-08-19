@@ -1,0 +1,171 @@
+"""
+scheduler.py
+Roda em background (thread) e decide QUANDO cada trabalho deve commitar,
+usando um algoritmo anti-spam:
+
+- Gera a "agenda do dia" uma vez por dia, por trabalho.
+- Quantidade de commits no dia é aleatória entre commits_min_dia e commits_max_dia.
+- Chance de pular o dia inteiro (chance_pular_dia).
+- Só gera horários dentro da janela [hora_inicio, hora_fim].
+- Garante intervalo mínimo (intervalo_min_minutos) entre commits do mesmo dia.
+- Só roda em dias da semana configurados (dias_semana).
+"""
+
+import datetime
+import random
+import threading
+import time
+
+import committer
+import config
+
+
+class Agendador:
+    def __init__(self, callback_log=None):
+        self._callback_log = callback_log or (lambda texto: None)
+        self._parar = threading.Event()
+        self._pausado = threading.Event()
+        self._thread = None
+
+    def log(self, texto):
+        agora = datetime.datetime.now().strftime("%H:%M:%S")
+        self._callback_log(f"[{agora}] {texto}")
+
+    # ---------- controle da thread ----------
+
+    def iniciar(self):
+        if self._thread and self._thread.is_alive():
+            return
+        self._parar.clear()
+        self._thread = threading.Thread(target=self._loop, daemon=True)
+        self._thread.start()
+        self.log("Agendador iniciado.")
+
+    def pausar(self):
+        self._pausado.set()
+        self.log("Agendador pausado.")
+
+    def retomar(self):
+        self._pausado.clear()
+        self.log("Agendador retomado.")
+
+    def esta_pausado(self):
+        return self._pausado.is_set()
+
+    def parar(self):
+        self._parar.set()
+        self.log("Agendador parado.")
+
+    # ---------- lógica principal ----------
+
+    def _loop(self):
+        while not self._parar.is_set():
+            if not self._pausado.is_set():
+                try:
+                    self._verificar_todos_jobs()
+                except Exception as exc:
+                    self.log(f"Erro no ciclo do agendador: {exc}")
+
+            intervalo = config.carregar_config()["geral"].get("intervalo_verificacao_segundos", 30)
+            self._parar.wait(intervalo)
+
+    def _verificar_todos_jobs(self):
+        cfg = config.carregar_config()
+        agora = datetime.datetime.now()
+        hoje_str = agora.strftime("%Y-%m-%d")
+
+        for job in cfg.get("jobs", []):
+            if not job.get("ativo", True):
+                continue
+
+            estado = config.carregar_estado_job(job["id"])
+
+            if estado.get("data_agenda") != hoje_str:
+                nova_agenda = self._gerar_agenda_do_dia(job, agora)
+                estado["data_agenda"] = hoje_str
+                estado["agenda_hoje"] = [h.strftime("%H:%M:%S") for h in nova_agenda]
+                estado["executados_hoje"] = []
+                config.salvar_estado_job(job["id"], estado)
+                if nova_agenda:
+                    horarios = ", ".join(h.strftime("%H:%M") for h in nova_agenda)
+                    self.log(f"[{job['nome']}] Agenda de hoje: {horarios}")
+                else:
+                    self.log(f"[{job['nome']}] Hoje não haverá commits (dia pulado ou fora da semana ativa).")
+
+            self._executar_pendentes(job, estado, agora)
+
+    def _gerar_agenda_do_dia(self, job, agora):
+        dia_semana = agora.weekday()  # 0=segunda
+        if dia_semana not in job.get("dias_semana", list(range(7))):
+            return []
+
+        if random.random() < float(job.get("chance_pular_dia", 0)):
+            return []
+
+        minimo = max(0, int(job.get("commits_min_dia", 1)))
+        maximo = max(minimo, int(job.get("commits_max_dia", 1)))
+        quantidade = random.randint(minimo, maximo)
+        if quantidade == 0:
+            return []
+
+        try:
+            h_ini, m_ini = map(int, job.get("hora_inicio", "08:00").split(":"))
+            h_fim, m_fim = map(int, job.get("hora_fim", "22:00").split(":"))
+        except ValueError:
+            h_ini, m_ini, h_fim, m_fim = 8, 0, 22, 0
+
+        inicio_janela = agora.replace(hour=h_ini, minute=m_ini, second=0, microsecond=0)
+        fim_janela = agora.replace(hour=h_fim, minute=m_fim, second=0, microsecond=0)
+        if fim_janela <= inicio_janela:
+            fim_janela = inicio_janela + datetime.timedelta(hours=1)
+
+        intervalo_min = datetime.timedelta(minutes=int(job.get("intervalo_min_minutos", 30)))
+        duracao_total = fim_janela - inicio_janela
+
+        # se não há espaço suficiente pra respeitar o intervalo mínimo, reduz a quantidade
+        capacidade_maxima = int(duracao_total / intervalo_min) + 1 if intervalo_min.total_seconds() > 0 else quantidade
+        quantidade = min(quantidade, max(1, capacidade_maxima))
+
+        tentativas = 0
+        horarios = []
+        while len(horarios) < quantidade and tentativas < quantidade * 40:
+            tentativas += 1
+            segundos_aleatorios = random.uniform(0, duracao_total.total_seconds())
+            candidato = inicio_janela + datetime.timedelta(seconds=segundos_aleatorios)
+
+            # já passou da hora atual? ainda inclui, só não executa retroativo (tratado na execução)
+            muito_perto = any(abs((candidato - h).total_seconds()) < intervalo_min.total_seconds() for h in horarios)
+            if not muito_perto:
+                horarios.append(candidato)
+
+        return sorted(horarios)
+
+    def _executar_pendentes(self, job, estado, agora):
+        agenda = [datetime.datetime.strptime(f"{agora.strftime('%Y-%m-%d')} {h}", "%Y-%m-%d %H:%M:%S")
+                  for h in estado.get("agenda_hoje", [])]
+        executados = set(estado.get("executados_hoje", []))
+
+        houve_execucao = False
+        for horario in agenda:
+            chave = horario.strftime("%H:%M:%S")
+            if chave in executados:
+                continue
+            if agora >= horario:
+                self.log(f"[{job['nome']}] Executando commit agendado para {chave}...")
+                sucesso, saida = committer.executar_commit(job)
+                status = "OK" if sucesso else "FALHOU"
+                self.log(f"[{job['nome']}] Resultado ({status}): {saida}")
+                executados.add(chave)
+                houve_execucao = True
+
+        if houve_execucao:
+            estado["executados_hoje"] = sorted(executados)
+            config.salvar_estado_job(job["id"], estado)
+
+    def executar_agora(self, job):
+        """Dispara um commit imediato, ignorando a agenda (botão 'Rodar agora')."""
+        self.log(f"[{job['nome']}] Execução manual solicitada...")
+        sucesso, saida = committer.executar_commit(job)
+        status = "OK" if sucesso else "FALHOU"
+        self.log(f"[{job['nome']}] Resultado ({status}): {saida}")
+        return sucesso, saida

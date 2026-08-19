@@ -1,0 +1,7 @@
+{
+  "geral": {
+    "iniciar_com_windows": true,
+    "intervalo_verificacao_segundos": 30
+  },
+  "jobs": []
+}
