@@ -14,20 +14,245 @@
       "comando_custom": "",
       "banco_mensagens_arquivo": "E:/Projeto/auto-committer/auto-committer/exemplo_mensagens.txt",
       "banco_mensagens": [
-        {"tipo": "chore", "mensagem": "ajuste de estilo no código"},
-        {"tipo": "style", "mensagem": "pequena melhoria de legibilidade"},
-        {"tipo": "docs", "mensagem": "atualização de documentação"},
-        {"tipo": "fix", "mensagem": "correção de detalhes menores"},
-        {"tipo": "refactor", "mensagem": "refino de comentários"},
-        {"tipo": "style", "mensagem": "organização de imports"},
-        {"tipo": "style", "mensagem": "pequeno ajuste de formatação"},
-        {"tipo": "refactor", "mensagem": "revisão de nomenclatura"},
-        {"tipo": "chore", "mensagem": "atualização do log de progresso"},
-        {"tipo": "chore", "mensagem": "ajuste fino de configuração"}
+        {
+          "tipo": "feat",
+          "mensagem": "adiciona validação de e-mail no formulário de cadastro"
+        },
+        {
+          "tipo": "feat",
+          "mensagem": "implementa paginação na listagem de usuários"
+        },
+        {
+          "tipo": "feat",
+          "mensagem": "adiciona suporte a tema escuro na interface"
+        },
+        {
+          "tipo": "feat",
+          "mensagem": "cria endpoint para exportar relatório em CSV"
+        },
+        {
+          "tipo": "feat",
+          "mensagem": "adiciona botão de \"esqueci minha senha\""
+        },
+        {
+          "tipo": "feat",
+          "mensagem": "implementa filtro de busca por data"
+        },
+        {
+          "tipo": "feat",
+          "mensagem": "adiciona confirmação por e-mail no cadastro"
+        },
+        {
+          "tipo": "feat",
+          "mensagem": "cria tela de configurações do usuário"
+        },
+        {
+          "tipo": "feat",
+          "mensagem": "adiciona atalho de teclado para busca rápida"
+        },
+        {
+          "tipo": "fix",
+          "mensagem": "corrige erro de validação no campo de telefone"
+        },
+        {
+          "tipo": "fix",
+          "mensagem": "resolve bug de duplicação de registros ao salvar"
+        },
+        {
+          "tipo": "fix",
+          "mensagem": "corrige cálculo incorreto no total do carrinho"
+        },
+        {
+          "tipo": "fix",
+          "mensagem": "ajusta comportamento do botão voltar no mobile"
+        },
+        {
+          "tipo": "fix",
+          "mensagem": "corrige vazamento de memória no loop principal"
+        },
+        {
+          "tipo": "fix",
+          "mensagem": "resolve condição de corrida ao salvar em paralelo"
+        },
+        {
+          "tipo": "fix",
+          "mensagem": "corrige mensagem de erro genérica na API"
+        },
+        {
+          "tipo": "fix",
+          "mensagem": "corrige quebra de layout em telas pequenas"
+        },
+        {
+          "tipo": "fix",
+          "mensagem": "resolve timeout ao consultar serviço externo"
+        },
+        {
+          "tipo": "docs",
+          "mensagem": "atualiza instruções de instalação no README"
+        },
+        {
+          "tipo": "docs",
+          "mensagem": "adiciona exemplos de uso da API"
+        },
+        {
+          "tipo": "docs",
+          "mensagem": "corrige links quebrados na documentação"
+        },
+        {
+          "tipo": "docs",
+          "mensagem": "documenta variáveis de ambiente necessárias"
+        },
+        {
+          "tipo": "docs",
+          "mensagem": "adiciona diagrama de arquitetura ao projeto"
+        },
+        {
+          "tipo": "docs",
+          "mensagem": "atualiza changelog com as últimas mudanças"
+        },
+        {
+          "tipo": "style",
+          "mensagem": "ajusta indentação e espaçamento do código"
+        },
+        {
+          "tipo": "style",
+          "mensagem": "padroniza nomenclatura de variáveis"
+        },
+        {
+          "tipo": "style",
+          "mensagem": "remove espaços em branco desnecessários"
+        },
+        {
+          "tipo": "style",
+          "mensagem": "organiza imports em ordem alfabética"
+        },
+        {
+          "tipo": "style",
+          "mensagem": "aplica formatação automática do linter"
+        },
+        {
+          "tipo": "refactor",
+          "mensagem": "extrai lógica repetida para função utilitária"
+        },
+        {
+          "tipo": "refactor",
+          "mensagem": "simplifica estrutura condicional complexa"
+        },
+        {
+          "tipo": "refactor",
+          "mensagem": "separa responsabilidades em módulos menores"
+        },
+        {
+          "tipo": "refactor",
+          "mensagem": "renomeia variáveis para maior clareza"
+        },
+        {
+          "tipo": "refactor",
+          "mensagem": "remove código morto e comentários obsoletos"
+        },
+        {
+          "tipo": "refactor",
+          "mensagem": "substitui callback aninhado por async/await"
+        },
+        {
+          "tipo": "test",
+          "mensagem": "adiciona teste unitário para o serviço de login"
+        },
+        {
+          "tipo": "test",
+          "mensagem": "cobre caso de borda na validação de datas"
+        },
+        {
+          "tipo": "test",
+          "mensagem": "adiciona teste de integração para o endpoint de pagamento"
+        },
+        {
+          "tipo": "test",
+          "mensagem": "corrige teste que falhava intermitentemente"
+        },
+        {
+          "tipo": "test",
+          "mensagem": "aumenta cobertura de testes do módulo de autenticação"
+        },
+        {
+          "tipo": "chore",
+          "mensagem": "atualiza dependências do projeto"
+        },
+        {
+          "tipo": "chore",
+          "mensagem": "ajusta configuração do linter"
+        },
+        {
+          "tipo": "chore",
+          "mensagem": "organiza estrutura de pastas do projeto"
+        },
+        {
+          "tipo": "chore",
+          "mensagem": "atualiza .gitignore"
+        },
+        {
+          "tipo": "chore",
+          "mensagem": "revisa e limpa arquivos temporários"
+        },
+        {
+          "tipo": "chore",
+          "mensagem": "atualiza log de progresso do projeto"
+        },
+        {
+          "tipo": "perf",
+          "mensagem": "otimiza consulta ao banco de dados"
+        },
+        {
+          "tipo": "perf",
+          "mensagem": "reduz tempo de carregamento da página inicial"
+        },
+        {
+          "tipo": "perf",
+          "mensagem": "implementa cache para requisições repetidas"
+        },
+        {
+          "tipo": "perf",
+          "mensagem": "reduz tamanho do bundle final"
+        },
+        {
+          "tipo": "build",
+          "mensagem": "atualiza versão do Node no ambiente de build"
+        },
+        {
+          "tipo": "build",
+          "mensagem": "ajusta script de build para produção"
+        },
+        {
+          "tipo": "build",
+          "mensagem": "adiciona novo pacote como dependência"
+        },
+        {
+          "tipo": "ci",
+          "mensagem": "adiciona pipeline de testes automatizados"
+        },
+        {
+          "tipo": "ci",
+          "mensagem": "corrige configuração do workflow do GitHub Actions"
+        },
+        {
+          "tipo": "ci",
+          "mensagem": "adiciona etapa de lint no pipeline de integração contínua"
+        }
       ],
       "usar_banco_sequencial": true,
-      "tipos_commit_selecionados": ["feat", "fix", "docs", "style", "refactor", "test", "chore", "perf", "build", "ci"],
-      "prefixo_mensagem": "chore: ",
+      "tipos_commit_selecionados": [
+        "feat",
+        "fix",
+        "docs",
+        "style",
+        "refactor",
+        "test",
+        "chore",
+        "perf",
+        "build",
+        "ci"
+      ],
+      "prefixo_mensagem": "",
       "dias_semana": [
         0,
         1,
@@ -40,8 +265,8 @@
       "hora_inicio": "08:00",
       "hora_fim": "22:00",
       "commits_min_dia": 1,
-      "commits_max_dia": 3,
-      "intervalo_min_minutos": 1,
+      "commits_max_dia": 10,
+      "intervalo_min_minutos": 80,
       "chance_pular_dia": 0.15,
       "push_automatico": true
     }

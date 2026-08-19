@@ -62,6 +62,12 @@ def _proxima_mensagem(job):
 
 TIMEOUT_PADRAO_SEGUNDOS = 60
 
+# No Windows, todo subprocess.run() abre uma janelinha de console (o
+# "flash" preto do cmd), mesmo com o app rodando --windowed. CREATE_NO_WINDOW
+# manda o Windows não criar essa janela pro processo filho (git). Em outros
+# SOs esse atributo não existe, então getattr cai pra 0 (sem efeito).
+FLAGS_SEM_JANELA = getattr(subprocess, "CREATE_NO_WINDOW", 0) if os.name == "nt" else 0
+
 
 def _rodar(comando, cwd, timeout=TIMEOUT_PADRAO_SEGUNDOS):
     """Roda um comando com timeout. Sem timeout, um 'git push' que pede
@@ -76,7 +82,8 @@ def _rodar(comando, cwd, timeout=TIMEOUT_PADRAO_SEGUNDOS):
             text=True,
             shell=False,
             timeout=timeout,
-            stdin=subprocess.DEVNULL  # garante que o git nunca fique esperando input
+            stdin=subprocess.DEVNULL,  # garante que o git nunca fique esperando input
+            creationflags=FLAGS_SEM_JANELA,  # evita o pop-up de console no Windows
         )
         return resultado.returncode, resultado.stdout.strip(), resultado.stderr.strip()
     except subprocess.TimeoutExpired:
