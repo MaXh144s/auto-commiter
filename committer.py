@@ -6,6 +6,7 @@ para um trabalho (job) específico.
 
 import datetime
 import os
+import shlex
 import subprocess
 
 import config
@@ -34,15 +35,31 @@ def _proxima_mensagem(job):
     return f"{prefixo}{mensagem}"
 
 
-def _rodar(comando, cwd):
-    resultado = subprocess.run(
-        comando,
-        cwd=cwd,
-        capture_output=True,
-        text=True,
-        shell=False
-    )
-    return resultado.returncode, resultado.stdout.strip(), resultado.stderr.strip()
+TIMEOUT_PADRAO_SEGUNDOS = 60
+
+
+def _rodar(comando, cwd, timeout=TIMEOUT_PADRAO_SEGUNDOS):
+    """Roda um comando com timeout. Sem timeout, um 'git push' que pede
+    senha interativamente travaria essa thread para sempre — e como o
+    agendador roda todos os jobs na mesma thread, isso pararia TODOS os
+    trabalhos, não só o que falhou."""
+    try:
+        resultado = subprocess.run(
+            comando,
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            shell=False,
+            timeout=timeout,
+            stdin=subprocess.DEVNULL  # garante que o git nunca fique esperando input
+        )
+        return resultado.returncode, resultado.stdout.strip(), resultado.stderr.strip()
+    except subprocess.TimeoutExpired:
+        return 1, "", (f"Comando excedeu o tempo limite de {timeout}s "
+                        f"(possível pedido de credenciais travado): {' '.join(comando)}")
+    except FileNotFoundError:
+        return 1, "", (f"Comando não encontrado: '{comando[0]}'. "
+                        f"Verifique se o git está instalado e no PATH.")
 
 
 def _alterar_arquivo(job, mensagem_atual):
@@ -54,7 +71,15 @@ def _alterar_arquivo(job, mensagem_atual):
 
     if job.get("modo_conteudo") == "comando_custom" and job.get("comando_custom"):
         # comando customizado é responsável por alterar o repo (ex: script)
-        codigo, saida, erro = _rodar(job["comando_custom"], repo)
+        # comando_custom vem como string do campo de texto da GUI — precisa
+        # ser dividido em lista de argumentos, senão subprocess.run com
+        # shell=False tenta achar um executável com o nome inteiro da string
+        # (ex: "python script.py") e sempre falha com FileNotFoundError.
+        try:
+            comando_lista = shlex.split(job["comando_custom"], posix=(os.name != "nt"))
+        except ValueError as exc:
+            return False, f"Comando customizado inválido: {exc}"
+        codigo, saida, erro = _rodar(comando_lista, repo)
         return codigo == 0, saida or erro
 
     linha = f"- {agora}"
@@ -70,6 +95,26 @@ def _alterar_arquivo(job, mensagem_atual):
         f.write(linha + "\n")
 
     return True, f"Arquivo atualizado: {caminho_arquivo}"
+
+
+def obter_data_ultimo_commit(repo_path):
+    """Consulta o git log de verdade do repositório pra saber quando foi o
+    último commit — em vez de manter um registro à parte, que ficaria
+    'zerado' e não saberia de commits feitos antes dessa função existir
+    (ou feitos manualmente, fora do programa). Retorna um datetime com
+    timezone, ou None se o repo for inválido ou não tiver nenhum commit."""
+    if not repo_path or not os.path.isdir(os.path.join(repo_path, ".git")):
+        return None
+
+    # %cI = data do commit em ISO 8601 com timezone (ex: 2026-08-19T21:35:00-03:00)
+    codigo, saida, erro = _rodar(["git", "log", "-1", "--format=%cI"], repo_path, timeout=15)
+    if codigo != 0 or not saida.strip():
+        return None
+
+    try:
+        return datetime.datetime.fromisoformat(saida.strip())
+    except ValueError:
+        return None
 
 
 def executar_commit(job):

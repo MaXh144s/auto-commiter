@@ -312,6 +312,20 @@ class JanelaPrincipal(tk.Toplevel):
         if not job:
             messagebox.showwarning("Aviso", "Selecione um trabalho na lista.")
             return
+
+        # Verifica no histórico persistido se o intervalo mínimo já foi
+        # respeitado — cobre o caso de o último commit ter sido feito numa
+        # execução anterior do programa (antes de fechar e reabrir o app).
+        pode_rodar, aviso = self.agendador.verificar_intervalo_minimo(job)
+        if not pode_rodar:
+            if not messagebox.askyesno(
+                "Intervalo mínimo recente",
+                aviso + "\n\nRodar mesmo assim?"
+            ):
+                return
+
+        messagebox.showinfo("Auto Committer", "Commits iniciados")
+
         sucesso, saida = self.agendador.executar_agora(job)
         if sucesso:
             messagebox.showinfo("Concluído", "Commit executado. Veja detalhes na aba Logs.")
@@ -337,7 +351,7 @@ class JanelaPrincipal(tk.Toplevel):
                 startup.remover_inicializacao()
         except Exception as exc:
             messagebox.showwarning("Aviso", f"Configuração salva, mas não foi possível atualizar a "
-                                             f"inicialização automática: {exc}")
+                                            f"inicialização automática: {exc}")
             return
 
         messagebox.showinfo("Salvo", "Configurações gerais salvas.")

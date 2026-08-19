@@ -11,6 +11,7 @@ import uuid
 PASTA_BASE = os.path.dirname(os.path.abspath(__file__))
 CAMINHO_CONFIG = os.path.join(PASTA_BASE, "config.json")
 PASTA_ESTADO = os.path.join(PASTA_BASE, "estado")
+CAMINHO_LOG = os.path.join(PASTA_BASE, "auto-committer.log")
 
 CONFIG_PADRAO = {
     "geral": {
@@ -85,13 +86,17 @@ def caminho_estado_job(job_id):
 
 def carregar_estado_job(job_id):
     caminho = caminho_estado_job(job_id)
+    padrao = {"indice_mensagem": 0, "data_agenda": None, "agenda_hoje": [], "executados_hoje": []}
     if not os.path.exists(caminho):
-        return {"indice_mensagem": 0, "data_agenda": None, "agenda_hoje": [], "executados_hoje": []}
+        return padrao
     with open(caminho, "r", encoding="utf-8") as f:
         try:
-            return json.load(f)
+            dados = json.load(f)
         except json.JSONDecodeError:
-            return {"indice_mensagem": 0, "data_agenda": None, "agenda_hoje": [], "executados_hoje": []}
+            return padrao
+    for chave, valor in padrao.items():
+        dados.setdefault(chave, valor)
+    return dados
 
 
 def salvar_estado_job(job_id, estado):

@@ -11,6 +11,8 @@ Comportamento:
   agenda anti-spam configurada.
 """
 
+import logging
+import logging.handlers
 import socket
 import sys
 import threading
@@ -24,6 +26,35 @@ import scheduler
 from gui import JanelaPrincipal
 
 PORTA_INSTANCIA_UNICA = 51765
+
+
+def configurar_log_em_arquivo():
+    """Grava logs em arquivo (rotacionando em até ~1MB x 3 arquivos), porque
+    em modo --silencioso (bandeja, sem console) os print() não vão pra
+    lugar nenhum — sem isso, um erro em segundo plano fica invisível."""
+    logger = logging.getLogger("auto_committer")
+    logger.setLevel(logging.INFO)
+
+    handler = logging.handlers.RotatingFileHandler(
+        config.CAMINHO_LOG, maxBytes=1_000_000, backupCount=3, encoding="utf-8"
+    )
+    handler.setFormatter(logging.Formatter("%(asctime)s %(message)s", "%Y-%m-%d %H:%M:%S"))
+    logger.addHandler(handler)
+    return logger
+
+
+LOGGER_ARQUIVO = configurar_log_em_arquivo()
+
+
+def _registrar_excecao_nao_tratada(tipo, valor, traceback_obj):
+    """Sem isso, um crash em modo --silencioso (sem console) simplesmente
+    faz o programa sumir da bandeja sem deixar nenhum rastro do motivo."""
+    LOGGER_ARQUIVO.error("Erro não tratado — o programa vai encerrar.",
+                          exc_info=(tipo, valor, traceback_obj))
+    sys.__excepthook__(tipo, valor, traceback_obj)
+
+
+sys.excepthook = _registrar_excecao_nao_tratada
 
 
 # ---------------- instância única ----------------
@@ -82,6 +113,7 @@ class AplicativoBandeja:
 
     def _log(self, texto):
         print(texto)
+        LOGGER_ARQUIVO.info(texto)
         if self.janela is not None and self.janela.winfo_exists():
             try:
                 self.janela.adicionar_log(texto)

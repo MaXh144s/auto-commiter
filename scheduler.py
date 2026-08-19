@@ -162,6 +162,35 @@ class Agendador:
             estado["executados_hoje"] = sorted(executados)
             config.salvar_estado_job(job["id"], estado)
 
+    def verificar_intervalo_minimo(self, job):
+        """Consulta o git log REAL do repositório (fonte de verdade, funciona
+        até com commits feitos antes dessa checagem existir) e verifica se
+        já passou tempo suficiente desde o último commit, respeitando o
+        intervalo mínimo configurado.
+
+        Retorna (pode_rodar: bool, mensagem: str | None). Se pode_rodar for
+        False, 'mensagem' explica há quanto tempo foi o último commit."""
+        ultimo = committer.obter_data_ultimo_commit(job.get("repo_path"))
+        if ultimo is None:
+            return True, None
+
+        agora = datetime.datetime.now().astimezone()  # aware, no fuso horário local
+        intervalo_min = datetime.timedelta(minutes=int(job.get("intervalo_min_minutos", 30)))
+        decorrido = agora - ultimo
+
+        if decorrido >= intervalo_min:
+            return True, None
+
+        faltam_minutos = int((intervalo_min - decorrido).total_seconds() // 60) + 1
+        decorrido_minutos = int(decorrido.total_seconds() // 60)
+        mensagem = (
+            f"O último commit deste trabalho foi há {decorrido_minutos} min "
+            f"(em {ultimo.strftime('%d/%m %H:%M')}).\n"
+            f"O intervalo mínimo configurado é de {job.get('intervalo_min_minutos', 30)} min "
+            f"— faltam ~{faltam_minutos} min."
+        )
+        return False, mensagem
+
     def executar_agora(self, job):
         """Dispara um commit imediato, ignorando a agenda (botão 'Rodar agora')."""
         self.log(f"[{job['nome']}] Execução manual solicitada...")
