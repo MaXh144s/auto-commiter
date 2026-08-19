@@ -138,7 +138,8 @@ def caminho_estado_job(job_id):
 def carregar_estado_job(job_id):
     caminho = caminho_estado_job(job_id)
     padrao = {"indice_mensagem": 0, "data_agenda": None, "agenda_hoje": [],
-              "executados_hoje": [], "execucao_manual_pendente": False}
+              "executados_hoje": [], "execucao_manual_pendente": False,
+              "avisados_intervalo_hoje": []}
     if not os.path.exists(caminho):
         return padrao
     with open(caminho, "r", encoding="utf-8") as f:

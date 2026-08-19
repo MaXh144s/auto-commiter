@@ -85,6 +85,7 @@ class Agendador:
                 estado["data_agenda"] = hoje_str
                 estado["agenda_hoje"] = [h.strftime("%H:%M:%S") for h in nova_agenda]
                 estado["executados_hoje"] = []
+                estado["avisados_intervalo_hoje"] = []
                 config.salvar_estado_job(job["id"], estado)
                 if nova_agenda:
                     horarios = ", ".join(h.strftime("%H:%M") for h in nova_agenda)
@@ -145,16 +146,39 @@ class Agendador:
         return sorted(horarios)
 
     def _executar_pendentes(self, job, estado, agora):
+        """Dispara os horários da agenda de hoje que já chegaram.
+
+        Antes de disparar um horário atrasado (ex: o PC ficou desligado e
+        passou da hora agendada), checa o intervalo mínimo desde o ÚLTIMO
+        commit REAL do repositório (git log) — a mesma regra usada no
+        'Rodar agora'. Isso vale tanto pra quando o agendador é iniciado
+        pelo sistema (--silencioso no boot) quanto manualmente: ele nunca
+        comita na hora só porque acabou de ligar; espera o intervalo desde
+        o último commit real passar, senão viraria uma rajada de commits
+        atrasados assim que o PC liga — o oposto do anti-spam."""
         agenda = [datetime.datetime.strptime(f"{agora.strftime('%Y-%m-%d')} {h}", "%Y-%m-%d %H:%M:%S")
                   for h in estado.get("agenda_hoje", [])]
         executados = set(estado.get("executados_hoje", []))
+        avisados = set(estado.get("avisados_intervalo_hoje", []))
 
         houve_execucao = False
+        houve_aviso_novo = False
         for horario in agenda:
             chave = horario.strftime("%H:%M:%S")
             if chave in executados:
                 continue
             if agora >= horario:
+                pode_rodar, _ = self.verificar_intervalo_minimo(job)
+                if not pode_rodar:
+                    # não marca como executado — tenta de novo no próximo
+                    # ciclo do agendador, sem spammar o log a cada ciclo
+                    if chave not in avisados:
+                        self.log(f"[{job['nome']}] Horário {chave} já chegou, mas aguardando "
+                                  f"o intervalo mínimo desde o último commit real antes de rodar.")
+                        avisados.add(chave)
+                        houve_aviso_novo = True
+                    continue
+
                 self.log(f"[{job['nome']}] Executando commit agendado para {chave}...")
                 sucesso, saida = committer.executar_commit(job)
                 status = "OK" if sucesso else "FALHOU"
@@ -164,6 +188,9 @@ class Agendador:
 
         if houve_execucao:
             estado["executados_hoje"] = sorted(executados)
+        if houve_aviso_novo:
+            estado["avisados_intervalo_hoje"] = sorted(avisados)
+        if houve_execucao or houve_aviso_novo:
             config.salvar_estado_job(job["id"], estado)
 
     def verificar_intervalo_minimo(self, job):
