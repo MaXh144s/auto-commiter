@@ -12,11 +12,34 @@ import subprocess
 import config
 
 
-def _proxima_mensagem(job):
+def _item_mensagem(item):
+    """Aceita tanto o formato atual ({"tipo", "mensagem"}) quanto uma
+    string pura (banco antigo, sem tipo — assume "chore")."""
+    if isinstance(item, dict):
+        return item.get("tipo", "chore"), item.get("mensagem", "atualização automática")
+    return "chore", str(item)
+
+
+def _filtrar_banco_por_tipos_selecionados(job):
     banco = job.get("banco_mensagens") or []
-    prefixo = job.get("prefixo_mensagem", "")
+    tipos_selecionados = set(job.get("tipos_commit_selecionados") or config.TIPOS_COMMIT_VALIDOS)
+    filtrado = [item for item in banco if _item_mensagem(item)[0] in tipos_selecionados]
+    # se o filtro zerar tudo (ex: usuário desmarcou os únicos tipos que
+    # existem no banco importado), cai pro banco inteiro em vez de sempre
+    # usar a mensagem genérica de fallback
+    return filtrado or banco
+
+
+def _proxima_mensagem(job):
+    """Escolhe a próxima mensagem do banco (respeitando os tipos de commit
+    selecionados no trabalho) e monta a mensagem final no estilo
+    'tipo: mensagem' (ex: 'feat: adiciona tela de login') — cada mensagem
+    carrega o seu próprio tipo, em vez de um prefixo fixo tipo 'chore: '
+    pra tudo, o que deixa o histórico de commits bem mais humano."""
+    banco = _filtrar_banco_por_tipos_selecionados(job)
 
     if not banco:
+        prefixo = job.get("prefixo_mensagem") or "chore: "
         return f"{prefixo}atualização automática"
 
     estado = config.carregar_estado_job(job["id"])
@@ -25,14 +48,16 @@ def _proxima_mensagem(job):
     if job.get("usar_banco_sequencial", True):
         if indice >= len(banco):
             indice = 0
-        mensagem = banco[indice]
+        item = banco[indice]
         estado["indice_mensagem"] = indice + 1
     else:
         import random
-        mensagem = random.choice(banco)
+        item = random.choice(banco)
 
     config.salvar_estado_job(job["id"], estado)
-    return f"{prefixo}{mensagem}"
+
+    tipo, texto = _item_mensagem(item)
+    return f"{tipo}: {texto}"
 
 
 TIMEOUT_PADRAO_SEGUNDOS = 60
@@ -84,12 +109,14 @@ def _alterar_arquivo(job, mensagem_atual):
 
     linha = f"- {agora}"
     if job.get("modo_conteudo") == "mensagens":
-        # usa o texto puro (sem o prefixo tipo "chore: ") na linha do arquivo
-        texto_puro = mensagem_atual
-        prefixo = job.get("prefixo_mensagem", "")
-        if prefixo and texto_puro.startswith(prefixo):
-            texto_puro = texto_puro[len(prefixo):]
-        linha += f" — {texto_puro}"
+        # mensagem_atual vem no formato "tipo: texto" (ex: "feat: adiciona
+        # tela de login") — separa pra deixar a linha do arquivo legível,
+        # mostrando o tipo entre colchetes em vez de repetir "tipo: " cru
+        if ": " in mensagem_atual:
+            tipo_atual, texto_puro = mensagem_atual.split(": ", 1)
+        else:
+            tipo_atual, texto_puro = "chore", mensagem_atual
+        linha += f" — [{tipo_atual}] {texto_puro}"
 
     with open(caminho_arquivo, "a", encoding="utf-8") as f:
         f.write(linha + "\n")

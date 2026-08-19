@@ -32,7 +32,8 @@ Isso abre a janela de configuração na hora (porque não foi chamado com
    - **Pasta do repositório git**: a pasta local do seu repositório (precisa ter `.git`)
    - **Arquivo alvo**: nome do arquivo que vai ser alterado a cada commit (ex: `log.md`)
    - **O que commitar**: `mensagens` (usa o banco de frases), `linha_data` (só data/hora) ou `comando_custom` (roda um comando seu)
-   - **Banco de mensagens**: importe o `exemplo_mensagens.txt` incluso, ou crie o seu (.txt = uma frase por linha, .csv = primeira coluna)
+   - **Banco de mensagens**: importe o `exemplo_mensagens.txt` incluso, ou crie o seu. Cada linha vai no formato `tipo: mensagem` (ex: `feat: adiciona tela de login`, `fix: corrige bug no formulário`) — tipos aceitos: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `perf`, `build`, `ci`. Linha sem tipo reconhecido na frente vira `chore` automaticamente. `.txt` = uma linha por mensagem, `.csv` = primeira coluna.
+   - **Tipos de commit usados no sorteio**: marque quais tipos (feat/fix/docs/...) entram no sorteio das mensagens desse trabalho. Cada mensagem sorteada já leva o seu próprio tipo como prefixo (ex: `feat: ...`, `fix: ...`), em vez de um prefixo fixo tipo `chore: ` pra tudo — deixa o histórico de commits bem mais variado e humano.
    - Dias da semana, janela de horário, quantidade de commits por dia, intervalo mínimo entre eles e chance de pular o dia (esse é o "anti-spam")
 3. Clique em **💾 Salvar trabalho**
 4. Use **▶ Rodar agora** pra testar um commit imediatamente

@@ -158,7 +158,7 @@ class JanelaPrincipal(tk.Toplevel):
         ttk.Entry(f, textvariable=self.var_comando_custom, width=40).grid(row=linha, column=1, columnspan=3, sticky="we")
         linha += 1
 
-        ttk.Label(f, text="Prefixo da mensagem de commit").grid(row=linha, column=0, sticky="w")
+        ttk.Label(f, text="Prefixo (fallback p/ 'linha_data' / comando customizado)").grid(row=linha, column=0, sticky="w")
         ttk.Entry(f, textvariable=self.var_prefixo, width=20).grid(row=linha, column=1, sticky="w")
         linha += 1
 
@@ -169,6 +169,18 @@ class JanelaPrincipal(tk.Toplevel):
 
         ttk.Checkbutton(f, text="Usar mensagens em ordem (sem repetir até esgotar)",
                          variable=self.var_sequencial).grid(row=linha, column=0, columnspan=3, sticky="w")
+        linha += 1
+
+        ttk.Label(f, text="Tipos de commit usados no sorteio").grid(row=linha, column=0, sticky="nw")
+        frame_tipos = ttk.Frame(f)
+        frame_tipos.grid(row=linha, column=1, columnspan=4, sticky="w")
+        self.vars_tipos_commit = {}
+        for i, tipo in enumerate(config.TIPOS_COMMIT_VALIDOS):
+            var_tipo = tk.BooleanVar(value=True)
+            self.vars_tipos_commit[tipo] = var_tipo
+            ttk.Checkbutton(
+                frame_tipos, text=config.TIPOS_COMMIT_LABELS[tipo], variable=var_tipo
+            ).grid(row=i // 3, column=i % 3, sticky="w", padx=(0, 12))
         linha += 1
 
         ttk.Separator(f).grid(row=linha, column=0, columnspan=5, sticky="we", pady=6)
@@ -268,6 +280,10 @@ class JanelaPrincipal(tk.Toplevel):
         for i, var in enumerate(self.vars_dias):
             var.set(i in dias_ativos)
 
+        tipos_ativos = job.get("tipos_commit_selecionados", list(config.TIPOS_COMMIT_VALIDOS))
+        for tipo, var in self.vars_tipos_commit.items():
+            var.set(tipo in tipos_ativos)
+
     def _novo_job(self):
         job = config.novo_job()
         self.cfg["jobs"].append(job)
@@ -321,6 +337,15 @@ class JanelaPrincipal(tk.Toplevel):
 
         dias_semana = [i for i, var in enumerate(self.vars_dias) if var.get()]
 
+        tipos_selecionados = [tipo for tipo, var in self.vars_tipos_commit.items() if var.get()]
+        aviso_tipos = []
+        if not tipos_selecionados:
+            tipos_selecionados = list(config.TIPOS_COMMIT_VALIDOS)
+            for var in self.vars_tipos_commit.values():
+                var.set(True)
+            aviso_tipos = ["Nenhum tipo de commit estava selecionado — todos foram marcados automaticamente."]
+
+        avisos = []
         for job in self.cfg["jobs"]:
             if job["id"] == self.job_selecionado_id:
                 job.update({
@@ -334,6 +359,7 @@ class JanelaPrincipal(tk.Toplevel):
                     "banco_mensagens_arquivo": caminho_banco,
                     "banco_mensagens": banco_mensagens if banco_mensagens else job.get("banco_mensagens", []),
                     "usar_banco_sequencial": self.var_sequencial.get(),
+                    "tipos_commit_selecionados": tipos_selecionados,
                     "dias_semana": dias_semana,
                     "hora_inicio": self.var_hora_inicio.get().strip(),
                     "hora_fim": self.var_hora_fim.get().strip(),
@@ -343,11 +369,31 @@ class JanelaPrincipal(tk.Toplevel):
                     "chance_pular_dia": chance_pular,
                     "push_automatico": self.var_push.get(),
                 })
+
+                # corrige intervalo mínimo <= 0 e commits_min_dia/commits_max_dia
+                # que não cabem de forma realista na janela de horário configurada;
+                # se os valores já eram válidos, o job não é alterado.
+                job_corrigido, avisos = config.validar_job(job)
+                job.update(job_corrigido)
+                avisos = aviso_tipos + avisos
+
+                # reflete na tela os valores efetivamente salvos, caso algo tenha sido ajustado
+                self.var_min_dia.set(str(job["commits_min_dia"]))
+                self.var_max_dia.set(str(job["commits_max_dia"]))
+                self.var_intervalo_min.set(str(job["intervalo_min_minutos"]))
                 break
 
         config.salvar_config(self.cfg)
         self._recarregar_lista_jobs()
-        messagebox.showinfo("Salvo", "Trabalho salvo com sucesso.")
+
+        if avisos:
+            messagebox.showwarning(
+                "Salvo com ajustes",
+                "Trabalho salvo, mas alguns valores foram ajustados automaticamente:\n\n"
+                + "\n".join(f"• {a}" for a in avisos)
+            )
+        else:
+            messagebox.showinfo("Salvo", "Trabalho salvo com sucesso.")
 
     def _rodar_agora(self):
         job = self._job_atual_da_lista()

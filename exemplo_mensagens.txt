@@ -1,10 +1,56 @@
-ajuste de estilo no código
-pequena melhoria de legibilidade
-atualização de documentação
-correção de detalhes menores
-refino de comentários
-organização de imports
-pequeno ajuste de formatação
-revisão de nomenclatura
-atualização do log de progresso
-ajuste fino de configuração
+feat: adiciona validação de e-mail no formulário de cadastro
+feat: implementa paginação na listagem de usuários
+feat: adiciona suporte a tema escuro na interface
+feat: cria endpoint para exportar relatório em CSV
+feat: adiciona botão de "esqueci minha senha"
+feat: implementa filtro de busca por data
+feat: adiciona confirmação por e-mail no cadastro
+feat: cria tela de configurações do usuário
+feat: adiciona atalho de teclado para busca rápida
+fix: corrige erro de validação no campo de telefone
+fix: resolve bug de duplicação de registros ao salvar
+fix: corrige cálculo incorreto no total do carrinho
+fix: ajusta comportamento do botão voltar no mobile
+fix: corrige vazamento de memória no loop principal
+fix: resolve condição de corrida ao salvar em paralelo
+fix: corrige mensagem de erro genérica na API
+fix: corrige quebra de layout em telas pequenas
+fix: resolve timeout ao consultar serviço externo
+docs: atualiza instruções de instalação no README
+docs: adiciona exemplos de uso da API
+docs: corrige links quebrados na documentação
+docs: documenta variáveis de ambiente necessárias
+docs: adiciona diagrama de arquitetura ao projeto
+docs: atualiza changelog com as últimas mudanças
+style: ajusta indentação e espaçamento do código
+style: padroniza nomenclatura de variáveis
+style: remove espaços em branco desnecessários
+style: organiza imports em ordem alfabética
+style: aplica formatação automática do linter
+refactor: extrai lógica repetida para função utilitária
+refactor: simplifica estrutura condicional complexa
+refactor: separa responsabilidades em módulos menores
+refactor: renomeia variáveis para maior clareza
+refactor: remove código morto e comentários obsoletos
+refactor: substitui callback aninhado por async/await
+test: adiciona teste unitário para o serviço de login
+test: cobre caso de borda na validação de datas
+test: adiciona teste de integração para o endpoint de pagamento
+test: corrige teste que falhava intermitentemente
+test: aumenta cobertura de testes do módulo de autenticação
+chore: atualiza dependências do projeto
+chore: ajusta configuração do linter
+chore: organiza estrutura de pastas do projeto
+chore: atualiza .gitignore
+chore: revisa e limpa arquivos temporários
+chore: atualiza log de progresso do projeto
+perf: otimiza consulta ao banco de dados
+perf: reduz tempo de carregamento da página inicial
+perf: implementa cache para requisições repetidas
+perf: reduz tamanho do bundle final
+build: atualiza versão do Node no ambiente de build
+build: ajusta script de build para produção
+build: adiciona novo pacote como dependência
+ci: adiciona pipeline de testes automatizados
+ci: corrige configuração do workflow do GitHub Actions
+ci: adiciona etapa de lint no pipeline de integração contínua

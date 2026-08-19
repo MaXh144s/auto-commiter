@@ -103,6 +103,13 @@ class Agendador:
         if random.random() < float(job.get("chance_pular_dia", 0)):
             return []
 
+        # corrige intervalo mínimo <= 0 e garante que commits_min_dia/
+        # commits_max_dia cabem de forma realista na janela de horário
+        # configurada — se o job já tiver valores válidos, nada muda aqui.
+        job, avisos = config.validar_job(job)
+        for aviso in avisos:
+            self.log(f"[{job['nome']}] {aviso}")
+
         minimo = max(0, int(job.get("commits_min_dia", 1)))
         maximo = max(minimo, int(job.get("commits_max_dia", 1)))
         quantidade = random.randint(minimo, maximo)
@@ -122,10 +129,6 @@ class Agendador:
 
         intervalo_min = datetime.timedelta(minutes=int(job.get("intervalo_min_minutos", 30)))
         duracao_total = fim_janela - inicio_janela
-
-        # se não há espaço suficiente pra respeitar o intervalo mínimo, reduz a quantidade
-        capacidade_maxima = int(duracao_total / intervalo_min) + 1 if intervalo_min.total_seconds() > 0 else quantidade
-        quantidade = min(quantidade, max(1, capacidade_maxima))
 
         tentativas = 0
         horarios = []
