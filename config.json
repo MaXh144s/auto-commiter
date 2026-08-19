@@ -40,7 +40,7 @@
       "hora_fim": "22:00",
       "commits_min_dia": 1,
       "commits_max_dia": 3,
-      "intervalo_min_minutos": 45,
+      "intervalo_min_minutos": 1,
       "chance_pular_dia": 0.15,
       "push_automatico": true
     }

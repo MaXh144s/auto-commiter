@@ -13,6 +13,48 @@ import config
 DIAS_SEMANA_LABELS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
 
 
+class DialogoEscolhaExecucao(tk.Toplevel):
+    """Diálogo com 3 opções, usado quando o intervalo mínimo entre commits
+    ainda não passou: commitar agora mesmo (força), commitar depois
+    (agenda pro agendador disparar sozinho quando o intervalo for atingido)
+    ou cancelar (não faz nada)."""
+
+    def __init__(self, master, mensagem):
+        super().__init__(master)
+        self.title("Intervalo mínimo recente")
+        self.resizable(False, False)
+        self.resultado = "cancelar"
+
+        ttk.Label(self, text=mensagem, wraplength=380, justify="left").pack(
+            padx=16, pady=(16, 12))
+
+        botoes = ttk.Frame(self)
+        botoes.pack(padx=16, pady=(0, 16), fill="x")
+
+        ttk.Button(botoes, text="Commitar agora",
+                   command=self._commitar_agora).pack(side="left", expand=True, fill="x", padx=2)
+        ttk.Button(botoes, text="Commitar depois",
+                   command=self._commitar_depois).pack(side="left", expand=True, fill="x", padx=2)
+        ttk.Button(botoes, text="Cancelar",
+                   command=self._cancelar).pack(side="left", expand=True, fill="x", padx=2)
+
+        self.transient(master)
+        self.grab_set()
+        self.protocol("WM_DELETE_WINDOW", self._cancelar)
+
+    def _commitar_agora(self):
+        self.resultado = "agora"
+        self.destroy()
+
+    def _commitar_depois(self):
+        self.resultado = "depois"
+        self.destroy()
+
+    def _cancelar(self):
+        self.resultado = "cancelar"
+        self.destroy()
+
+
 class JanelaPrincipal(tk.Toplevel):
     def __init__(self, master, agendador):
         super().__init__(master)
@@ -313,16 +355,28 @@ class JanelaPrincipal(tk.Toplevel):
             messagebox.showwarning("Aviso", "Selecione um trabalho na lista.")
             return
 
-        # Verifica no histórico persistido se o intervalo mínimo já foi
-        # respeitado — cobre o caso de o último commit ter sido feito numa
-        # execução anterior do programa (antes de fechar e reabrir o app).
+        # Verifica no git log real se o intervalo mínimo já foi respeitado —
+        # cobre o caso de o último commit ter sido feito numa execução
+        # anterior do programa, ou até manualmente fora dele.
         pode_rodar, aviso = self.agendador.verificar_intervalo_minimo(job)
+
         if not pode_rodar:
-            if not messagebox.askyesno(
-                "Intervalo mínimo recente",
-                aviso + "\n\nRodar mesmo assim?"
-            ):
+            dialogo = DialogoEscolhaExecucao(self, aviso + "\n\nO que deseja fazer?")
+            self.wait_window(dialogo)
+            escolha = dialogo.resultado
+
+            if escolha == "cancelar":
                 return
+
+            if escolha == "depois":
+                self.agendador.agendar_para_depois(job)
+                messagebox.showinfo(
+                    "Agendado",
+                    "O commit será feito automaticamente assim que o intervalo mínimo for atingido."
+                )
+                return
+
+            # escolha == "agora" -> segue o fluxo abaixo, forçando mesmo assim
 
         messagebox.showinfo("Auto Committer", "Commits iniciados")
 
@@ -351,7 +405,7 @@ class JanelaPrincipal(tk.Toplevel):
                 startup.remover_inicializacao()
         except Exception as exc:
             messagebox.showwarning("Aviso", f"Configuração salva, mas não foi possível atualizar a "
-                                            f"inicialização automática: {exc}")
+                                             f"inicialização automática: {exc}")
             return
 
         messagebox.showinfo("Salvo", "Configurações gerais salvas.")

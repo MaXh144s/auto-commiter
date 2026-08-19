@@ -93,6 +93,7 @@ class Agendador:
                     self.log(f"[{job['nome']}] Hoje não haverá commits (dia pulado ou fora da semana ativa).")
 
             self._executar_pendentes(job, estado, agora)
+            self._verificar_execucao_manual_pendente(job)
 
     def _gerar_agenda_do_dia(self, job, agora):
         dia_semana = agora.weekday()  # 0=segunda
@@ -191,10 +192,37 @@ class Agendador:
         )
         return False, mensagem
 
+    def agendar_para_depois(self, job):
+        """Usado quando o usuário escolhe 'Commitar depois' no diálogo do
+        'Rodar agora': marca o trabalho como pendente. O próprio loop em
+        background (_verificar_execucao_manual_pendente) dispara o commit
+        automaticamente assim que o intervalo mínimo configurado passar —
+        não precisa o usuário voltar e clicar de novo."""
+        config.marcar_execucao_pendente(job["id"], True)
+        self.log(f"[{job['nome']}] Commit agendado — será feito automaticamente "
+                  f"assim que o intervalo mínimo for atingido.")
+
+    def _verificar_execucao_manual_pendente(self, job):
+        if not config.esta_execucao_pendente(job["id"]):
+            return
+
+        pode_rodar, _ = self.verificar_intervalo_minimo(job)
+        if not pode_rodar:
+            return
+
+        self.log(f"[{job['nome']}] Intervalo mínimo atingido — executando commit pendente...")
+        sucesso, saida = committer.executar_commit(job)
+        status = "OK" if sucesso else "FALHOU"
+        self.log(f"[{job['nome']}] Resultado ({status}): {saida}")
+        config.marcar_execucao_pendente(job["id"], False)
+
     def executar_agora(self, job):
         """Dispara um commit imediato, ignorando a agenda (botão 'Rodar agora')."""
         self.log(f"[{job['nome']}] Execução manual solicitada...")
         sucesso, saida = committer.executar_commit(job)
         status = "OK" if sucesso else "FALHOU"
         self.log(f"[{job['nome']}] Resultado ({status}): {saida}")
+        # se havia um 'commitar depois' pendente e o usuário forçou agora,
+        # cancela o pendente pra não commitar de novo automaticamente
+        config.marcar_execucao_pendente(job["id"], False)
         return sucesso, saida

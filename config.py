@@ -86,7 +86,8 @@ def caminho_estado_job(job_id):
 
 def carregar_estado_job(job_id):
     caminho = caminho_estado_job(job_id)
-    padrao = {"indice_mensagem": 0, "data_agenda": None, "agenda_hoje": [], "executados_hoje": []}
+    padrao = {"indice_mensagem": 0, "data_agenda": None, "agenda_hoje": [],
+              "executados_hoje": [], "execucao_manual_pendente": False}
     if not os.path.exists(caminho):
         return padrao
     with open(caminho, "r", encoding="utf-8") as f:
@@ -103,6 +104,18 @@ def salvar_estado_job(job_id, estado):
     garantir_pastas()
     with open(caminho_estado_job(job_id), "w", encoding="utf-8") as f:
         json.dump(estado, f, ensure_ascii=False, indent=2)
+
+def marcar_execucao_pendente(job_id, pendente=True):
+    """Marca (ou desmarca) que existe um 'commitar depois' pendente pra esse
+    trabalho — o agendador em background vai disparar automaticamente assim
+    que o intervalo mínimo configurado for atingido."""
+    estado = carregar_estado_job(job_id)
+    estado["execucao_manual_pendente"] = pendente
+    salvar_estado_job(job_id, estado)
+
+
+def esta_execucao_pendente(job_id):
+    return bool(carregar_estado_job(job_id).get("execucao_manual_pendente", False))
 
 
 def importar_banco_mensagens(caminho_arquivo):
