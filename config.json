@@ -3,5 +3,46 @@
     "iniciar_com_windows": true,
     "intervalo_verificacao_segundos": 30
   },
-  "jobs": []
+  "jobs": [
+    {
+      "id": "2f28378f-dc7c-4399-b1f9-be3039421404",
+      "nome": "Novo trabalho",
+      "ativo": true,
+      "repo_path": "E:/Projeto/diario-dev",
+      "arquivo_alvo": "log.md",
+      "modo_conteudo": "mensagens",
+      "comando_custom": "",
+      "banco_mensagens_arquivo": "E:/Projeto/auto-committer/auto-committer/exemplo_mensagens.txt",
+      "banco_mensagens": [
+        "ajuste de estilo no código",
+        "pequena melhoria de legibilidade",
+        "atualização de documentação",
+        "correção de detalhes menores",
+        "refino de comentários",
+        "organização de imports",
+        "pequeno ajuste de formatação",
+        "revisão de nomenclatura",
+        "atualização do log de progresso",
+        "ajuste fino de configuração"
+      ],
+      "usar_banco_sequencial": true,
+      "prefixo_mensagem": "chore: ",
+      "dias_semana": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "hora_inicio": "08:00",
+      "hora_fim": "22:00",
+      "commits_min_dia": 1,
+      "commits_max_dia": 3,
+      "intervalo_min_minutos": 45,
+      "chance_pular_dia": 0.15,
+      "push_automatico": true
+    }
+  ]
 }
