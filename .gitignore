@@ -2,8 +2,6 @@ dist/
 build/
 *.spec
 __pycache__/
-
 auto-committer.log
 AutoCommitter.spec
-
 estado/

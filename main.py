@@ -11,8 +11,10 @@ Comportamento:
   agenda anti-spam configurada.
 """
 
+import datetime
 import logging
 import logging.handlers
+import os
 import socket
 import sys
 import threading
@@ -28,10 +30,48 @@ from gui import JanelaPrincipal
 PORTA_INSTANCIA_UNICA = 51765
 
 
+def _precisa_separador_de_dia():
+    """Verifica se a última linha já gravada no log é de um dia diferente
+    de hoje — usado pra decidir se insere uma linha separadora antes de
+    continuar gravando os registros de hoje, deixando o histórico
+    organizado por dia em vez de tudo misturado."""
+    if not os.path.exists(config.CAMINHO_LOG):
+        return False
+    try:
+        with open(config.CAMINHO_LOG, "r", encoding="utf-8", errors="ignore") as arq:
+            linhas = [linha for linha in arq if linha.strip()]
+    except OSError:
+        return False
+    if not linhas:
+        return False
+    try:
+        data_ultima_linha = datetime.datetime.strptime(linhas[-1][:10], "%Y-%m-%d").date()
+    except ValueError:
+        # última linha não começa com uma data reconhecível (ex: já é um
+        # separador de dia) — não insere separador duplicado
+        return False
+    return data_ultima_linha != datetime.date.today()
+
+
+def _escrever_separador_de_dia():
+    hoje = datetime.date.today().strftime("%d/%m/%Y")
+    try:
+        with open(config.CAMINHO_LOG, "a", encoding="utf-8") as arq:
+            arq.write(f"--------- {hoje} ----------\n")
+    except OSError:
+        pass
+
+
 def configurar_log_em_arquivo():
     """Grava logs em arquivo (rotacionando em até ~1MB x 3 arquivos), porque
     em modo --silencioso (bandeja, sem console) os print() não vão pra
-    lugar nenhum — sem isso, um erro em segundo plano fica invisível."""
+    lugar nenhum — sem isso, um erro em segundo plano fica invisível.
+
+    Se o programa já tinha registros de um dia anterior, insere uma linha
+    separadora antes de continuar gravando os registros de hoje."""
+    if _precisa_separador_de_dia():
+        _escrever_separador_de_dia()
+
     logger = logging.getLogger("auto_committer")
     logger.setLevel(logging.INFO)
 

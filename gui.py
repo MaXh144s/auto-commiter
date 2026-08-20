@@ -4,6 +4,7 @@ Janela de configuração. Só é exibida quando o usuário abre o executável
 manualmente ou clica em "Abrir configurações" no ícone da bandeja.
 """
 
+import os
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 
@@ -239,6 +240,39 @@ class JanelaPrincipal(tk.Toplevel):
         f = self.aba_logs
         self.texto_logs = tk.Text(f, state="disabled", wrap="word")
         self.texto_logs.pack(fill="both", expand=True, padx=8, pady=8)
+        self._carregar_log_persistido()
+
+    def _carregar_log_persistido(self):
+        """Preenche a aba de Logs com o que já está salvo em disco (a
+        partir do último separador de dia, ou tudo se não houver nenhum)
+        — assim, ao reabrir o programa, o histórico de hoje continua
+        visível em vez de começar em branco toda vez."""
+        if not os.path.exists(config.CAMINHO_LOG):
+            return
+        try:
+            with open(config.CAMINHO_LOG, "r", encoding="utf-8", errors="ignore") as arq:
+                linhas = arq.readlines()
+        except OSError:
+            return
+
+        indice_ultimo_separador = None
+        for i, linha in enumerate(linhas):
+            if linha.startswith("---------"):
+                indice_ultimo_separador = i
+
+        if indice_ultimo_separador is not None:
+            linhas_para_mostrar = linhas[indice_ultimo_separador:]
+        else:
+            linhas_para_mostrar = linhas[-500:]  # sem separador ainda: mostra o fim do arquivo
+
+        if not linhas_para_mostrar:
+            return
+
+        self.texto_logs.configure(state="normal")
+        for linha in linhas_para_mostrar:
+            self.texto_logs.insert(tk.END, linha if linha.endswith("\n") else linha + "\n")
+        self.texto_logs.see(tk.END)
+        self.texto_logs.configure(state="disabled")
 
     # ---------------- ações ----------------
 
@@ -451,7 +485,7 @@ class JanelaPrincipal(tk.Toplevel):
                 startup.remover_inicializacao()
         except Exception as exc:
             messagebox.showwarning("Aviso", f"Configuração salva, mas não foi possível atualizar a "
-                                             f"inicialização automática: {exc}")
+                                            f"inicialização automática: {exc}")
             return
 
         messagebox.showinfo("Salvo", "Configurações gerais salvas.")

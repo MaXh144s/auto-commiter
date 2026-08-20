@@ -7,9 +7,27 @@ e o estado de "banco de mensagens" de cada trabalho.
 import json
 import os
 import re
+import sys
 import uuid
 
-PASTA_BASE = os.path.dirname(os.path.abspath(__file__))
+def _detectar_pasta_base():
+    """Pasta onde config.json, o log e o estado devem ficar salvos.
+
+    CUIDADO: __file__ não pode ser usado aqui quando o programa está
+    rodando como .exe gerado pelo PyInstaller em modo --onefile. Nesse
+    modo, o PyInstaller extrai tudo pra uma pasta TEMPORÁRIA a cada
+    execução (e apaga essa pasta ao fechar) — então
+    os.path.dirname(os.path.abspath(__file__)) apontaria pra um lugar
+    diferente e vazio a cada vez que o programa abre, fazendo o
+    config.json (trabalhos configurados) e o log "sumirem" toda vez
+    que o PC liga de novo. sys.executable, ao contrário, sempre aponta
+    pro .exe de verdade, parado sempre no mesmo lugar."""
+    if getattr(sys, "frozen", False):
+        return os.path.dirname(os.path.abspath(sys.executable))
+    return os.path.dirname(os.path.abspath(__file__))
+
+
+PASTA_BASE = _detectar_pasta_base()
 CAMINHO_CONFIG = os.path.join(PASTA_BASE, "config.json")
 PASTA_ESTADO = os.path.join(PASTA_BASE, "estado")
 CAMINHO_LOG = os.path.join(PASTA_BASE, "auto-committer.log")
