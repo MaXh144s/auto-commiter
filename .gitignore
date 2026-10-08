@@ -1,0 +1,10 @@
+*.spec
+!AutoCommitter.spec
+__pycache__/
+gerados/
+.venv/
+.vscode/
+.pytest_cache/
+build/
+dist/
+*.py[cod]

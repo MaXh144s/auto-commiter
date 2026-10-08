@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <title>Auto Committer</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="#" aria-label="Auto Committer, início">
+          <span class="brand-mark" aria-hidden="true">AC</span>
+          <span>Auto Committer</span>
+        </a>
+        <p class="nav-label">ESPAÇO DE TRABALHO</p>
+        <nav class="navigation" aria-label="Navegação principal">
+          <button class="nav-link active" type="button" data-target="commit-page" aria-current="page">
+            <span class="nav-icon" aria-hidden="true">↗</span>
+            Auto Commit
+          </button>
+          <button class="nav-link" type="button" data-target="github-page">
+            <span class="nav-icon" aria-hidden="true">▦</span>
+            Gráfico do GitHub
+          </button>
+          <button class="nav-link" type="button" data-target="settings-page">
+            <span class="nav-icon" aria-hidden="true">⚙</span>
+            Configurações
+          </button>
+        </nav>
+        <div class="sidebar-note">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span id="bridge-status">Iniciando aplicativo…</span>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">SEU ESPAÇO DE DESENVOLVIMENTO</p>
+            <h1 id="page-title">Auto Commit</h1>
+          </div>
+          <span class="topbar-pill"><span class="status-dot" aria-hidden="true"></span> Neste dispositivo</span>
+        </header>
+
+        <section class="page active" id="commit-page" aria-labelledby="page-title">
+          <div class="intro-row">
+            <div>
+              <p class="page-lead">Escolha uma mensagem para registrar sua contribuição e atualizar o GitHub.</p>
+            </div>
+            <span class="step-label"><span>01</span> Registro GitHub</span>
+          </div>
+
+          <div class="commit-layout">
+            <section class="card commit-card" aria-labelledby="commit-heading">
+              <div class="card-heading">
+                <div class="heading-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M8 5h8M8 12h8M8 19h8M5 5h.01M5 12h.01M5 19h.01"/></svg>
+                </div>
+                <div>
+                  <h2 id="commit-heading">Gerar contribuição</h2>
+                  <p>A mensagem escolhida será registrada no log do repositório.</p>
+                </div>
+              </div>
+
+              <form id="commit-form" novalidate>
+                <div class="field">
+                  <label for="repo-path">Pasta do repositório</label>
+                  <div class="input-with-button">
+                    <input id="repo-path" name="repo-path" type="text" autocomplete="off"
+                           placeholder="Escolha ou cole o caminho da pasta" aria-describedby="repo-error repo-hint">
+                    <button class="button button-secondary button-compact" id="browse-button" type="button">Procurar</button>
+                  </div>
+                  <p class="field-hint" id="repo-hint">A pasta precisa ser um repositório Git válido.</p>
+                  <p class="field-error" id="repo-error" aria-live="polite"></p>
+                </div>
+
+                <div class="repo-status" id="repo-status" aria-live="polite">
+                  <span class="status-indicator" aria-hidden="true"></span>
+                  <span>Escolha uma pasta para validar o repositório.</span>
+                  <button class="text-button" id="refresh-status" type="button" aria-label="Validar novamente o repositório">Validar</button>
+                </div>
+
+                <div class="field message-bank-field" id="message-bank-field" hidden>
+                  <label for="message-bank-select">Banco de mensagens</label>
+                  <div class="input-with-button">
+                    <select id="message-bank-select" disabled aria-label="Mensagem do banco">
+                      <option value="">Selecione uma mensagem</option>
+                    </select>
+                    <button class="button button-secondary button-compact" id="message-bank-button" type="button" disabled>
+                      Escolher arquivo
+                    </button>
+                  </div>
+                  <p class="field-hint" id="message-bank-name">Escolha um arquivo .txt ou .csv; uma mensagem será selecionada automaticamente.</p>
+                  <label class="check-row avoid-repeat-toggle" for="avoid-repeated">
+                    <input id="avoid-repeated" type="checkbox" disabled>
+                    <span class="check-control" aria-hidden="true"></span>
+                    <span class="check-copy">
+                      <strong>Evitar mensagens repetidas</strong>
+                      <small>Prioriza as mensagens menos usadas no histórico local.</small>
+                    </span>
+                  </label>
+                  <p class="field-hint message-usage" id="message-usage" aria-live="polite"></p>
+                </div>
+
+                <div class="field">
+                  <label for="commit-message">Mensagem selecionada</label>
+                  <textarea id="commit-message" name="commit-message" rows="3" maxlength="500"
+                            placeholder="Escolha um banco de mensagens acima" aria-describedby="message-error" readonly></textarea>
+                  <p class="field-error" id="message-error" aria-live="polite"></p>
+                </div>
+
+                <p class="callout generator-flow">Ao confirmar, a mensagem será adicionada ao <code>log.md</code>, seguida por <code>git add .</code>, commit e push.</p>
+
+                <div class="form-footer">
+                  <span class="privacy-note"><span aria-hidden="true">⌂</span> O registro e o envio acontecem neste repositório.</span>
+                  <button class="button button-primary" id="commit-button" type="submit" disabled>
+                    <span class="button-spinner" aria-hidden="true"></span>
+                    <span>Gerar contribuição</span>
+                    <span aria-hidden="true">→</span>
+                  </button>
+                </div>
+              </form>
+            </section>
+
+            <aside class="side-column">
+              <section class="card info-card">
+                <span class="card-kicker">ANTES DE CONTINUAR</span>
+                <h2>O que será feito</h2>
+                <ul class="info-list">
+                  <li><span class="list-check" aria-hidden="true">✓</span><span>Anexar uma linha ao <code>log.md</code> sem apagar o histórico.</span></li>
+                  <li><span class="list-check" aria-hidden="true">✓</span><span>Criar o commit com a mensagem do banco.</span></li>
+                  <li><span class="list-check" aria-hidden="true">✓</span><span>Executar <code>git add .</code> e enviar com push.</span></li>
+                </ul>
+                <p class="callout">Você verá um resumo e poderá confirmar antes de executar.</p>
+              </section>
+              <section class="tip-card">
+                <span class="tip-icon" aria-hidden="true">✳</span>
+                <div><strong>Dica</strong><p>Uma mensagem curta e clara facilita encontrar este commit depois.</p></div>
+              </section>
+              <section class="card auto-schedule-card" aria-labelledby="schedule-heading">
+                <div class="schedule-heading">
+                  <div>
+                    <span class="card-kicker">AUTOMAÇÃO</span>
+                    <h2 id="schedule-heading">Agendamento automático</h2>
+                  </div>
+                  <span class="schedule-state stopped" id="schedule-state">Parado</span>
+                </div>
+                <p class="schedule-warning">Após seu primeiro commit manual, a automação continua ativa enquanto o app estiver aberto ou na bandeja.</p>
+                <form id="schedule-form" novalidate>
+                  <fieldset class="schedule-days">
+                    <legend>Dias da semana</legend>
+                    <div class="weekday-options" id="weekday-options">
+                      <label><input type="checkbox" value="0"><span>Seg</span></label>
+                      <label><input type="checkbox" value="1"><span>Ter</span></label>
+                      <label><input type="checkbox" value="2"><span>Qua</span></label>
+                      <label><input type="checkbox" value="3"><span>Qui</span></label>
+                      <label><input type="checkbox" value="4"><span>Sex</span></label>
+                      <label><input type="checkbox" value="5"><span>Sáb</span></label>
+                      <label><input type="checkbox" value="6"><span>Dom</span></label>
+                    </div>
+                    <p class="field-error" id="schedule-days-error" aria-live="polite"></p>
+                  </fieldset>
+                  <div class="schedule-fields">
+                    <div class="field">
+                      <label for="schedule-interval">Intervalo (minutos)</label>
+                      <input id="schedule-interval" type="number" min="1" step="1" value="60">
+                      <p class="field-error" id="schedule-interval-error" aria-live="polite"></p>
+                    </div>
+                    <div class="schedule-counts">
+                      <div class="field">
+                        <label for="schedule-minimum">Mínimo por dia</label>
+                        <input id="schedule-minimum" type="number" min="1" step="1" value="1">
+                        <p class="field-error" id="schedule-minimum-error" aria-live="polite"></p>
+                      </div>
+                      <div class="field">
+                        <label for="schedule-maximum">Máximo por dia</label>
+                        <input id="schedule-maximum" type="number" min="1" step="1" value="3">
+                        <p class="field-error" id="schedule-maximum-error" aria-live="polite"></p>
+                      </div>
+                    </div>
+                  </div>
+                  <p class="field-error schedule-form-error" id="schedule-form-error" aria-live="polite"></p>
+                  <div class="schedule-actions">
+                    <button class="button button-secondary button-compact" id="save-schedule" type="button">Salvar</button>
+                    <button class="button button-primary button-compact" id="toggle-schedule" type="button">Iniciar</button>
+                  </div>
+                </form>
+                <div class="schedule-progress" id="schedule-progress" hidden>
+                  <div class="schedule-progress-copy">
+                    <strong id="schedule-progress-text">0 de 0 commits feitos</strong>
+                    <span id="schedule-next-commit">Próximo commit: —</span>
+                  </div>
+                  <progress id="schedule-progress-bar" max="1" value="0" aria-label="Progresso diário dos commits"></progress>
+                  <p class="schedule-last-commit" id="schedule-last-commit">Último commit: ainda não realizado</p>
+                  <p class="schedule-status-message" id="schedule-status-message"></p>
+                </div>
+                <section class="schedule-log-section" aria-labelledby="schedule-log-heading">
+                  <h3 id="schedule-log-heading">Atividade do agendamento</h3>
+                  <div class="schedule-log" id="schedule-log" aria-live="polite">
+                    <p class="schedule-log-empty">Os commits automáticos aparecerão aqui.</p>
+                  </div>
+                </section>
+              </section>
+            </aside>
+          </div>
+
+          <section class="card history-card" aria-labelledby="history-heading">
+            <div class="history-heading">
+              <div><h2 id="history-heading">Atividade recente</h2><p>As últimas ações desta sessão.</p></div>
+              <span class="history-count" id="history-count">0 ações</span>
+            </div>
+            <div id="history-list" class="history-list" aria-live="polite">
+              <div class="empty-history"><span aria-hidden="true">◷</span><p>Suas ações recentes aparecerão aqui.</p></div>
+            </div>
+          </section>
+        </section>
+
+        <section class="page" id="github-page" aria-labelledby="github-heading" hidden>
+          <div class="intro-row">
+            <div>
+              <p class="eyebrow">SUA ATIVIDADE EM UM SÓ LUGAR</p>
+              <h2 class="section-title" id="github-heading">Contribuições do GitHub</h2>
+              <p class="page-lead">Veja seu ritmo de contribuições ao longo do tempo.</p>
+            </div>
+            <span class="step-label"><span>02</span> Calendário</span>
+          </div>
+
+          <section class="card github-connect" aria-labelledby="connect-heading">
+            <div id="connect-form">
+              <div class="card-heading">
+                <div class="heading-icon github-icon" aria-hidden="true">GH</div>
+                <div><h2 id="connect-heading">Conecte sua conta</h2><p>Seu token é usado diretamente pelo aplicativo para consultar o GitHub.</p></div>
+              </div>
+              <form id="token-form" novalidate>
+                <div class="field">
+                  <label for="github-token">Personal Access Token</label>
+                  <div class="input-with-button">
+                    <input id="github-token" type="password" autocomplete="off" spellcheck="false"
+                           placeholder="Cole seu token do GitHub" aria-describedby="token-help token-error">
+                    <button class="button button-primary button-compact" id="connect-button" type="submit">
+                      <span class="button-spinner" aria-hidden="true"></span><span>Conectar</span>
+                    </button>
+                  </div>
+                  <p class="field-error" id="token-error" aria-live="polite"></p>
+                  <p class="field-hint" id="token-help">Para dados públicos, crie um token sem permissões extras.</p>
+                </div>
+                <p class="privacy-note token-privacy"><span aria-hidden="true">⌂</span> O token fica apenas na memória deste dispositivo e não é enviado ao Auto Committer.</p>
+              </form>
+            </div>
+            <div id="connected-user" class="connected-user" hidden>
+              <div class="user-profile">
+                <img id="user-avatar" alt="" width="48" height="48">
+                <div><strong id="user-name"></strong><span id="user-login"></span></div>
+              </div>
+              <button class="button button-secondary" id="disconnect-button" type="button">Sair</button>
+            </div>
+          </section>
+
+          <section class="card contribution-card" aria-labelledby="calendar-heading">
+            <div class="calendar-top">
+              <div><h2 id="calendar-heading">Seu calendário</h2><p id="calendar-subtitle">Conecte uma conta para começar.</p></div>
+              <div class="calendar-controls">
+                <label class="visually-hidden" for="period-select">Período</label>
+                <select id="period-select">
+                  <option value="last-year">Últimos 12 meses</option>
+                </select>
+                <label class="visually-hidden" for="period-from">De</label>
+                <input id="period-from" type="date" aria-label="Data inicial">
+                <span aria-hidden="true">—</span>
+                <label class="visually-hidden" for="period-to">Até</label>
+                <input id="period-to" type="date" aria-label="Data final">
+                <button class="button button-secondary button-compact" id="load-calendar" type="button" disabled>
+                  <span class="button-spinner" aria-hidden="true"></span><span>Atualizar</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="stats-grid" id="stats-grid" aria-label="Estatísticas de contribuições">
+              <div class="stat"><span>Total no período</span><strong id="stat-total">—</strong></div>
+              <div class="stat"><span>Sequência atual</span><strong id="stat-current">—</strong></div>
+              <div class="stat"><span>Maior sequência</span><strong id="stat-longest">—</strong></div>
+            </div>
+
+            <div class="calendar-state" id="calendar-state" aria-live="polite">
+              <p>Conecte sua conta do GitHub para carregar suas contribuições.</p>
+            </div>
+            <div class="calendar-skeleton" id="calendar-skeleton" hidden aria-label="Carregando calendário">
+              <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+            </div>
+            <div class="heatmap-scroll" id="heatmap-scroll" hidden>
+              <div class="calendar-plot">
+                <span class="month-corner" aria-hidden="true"></span>
+                <div class="month-labels" id="month-labels" aria-hidden="true"></div>
+                <div class="weekday-labels" aria-hidden="true"><span>Dom</span><span></span><span>Ter</span><span></span><span>Qui</span><span></span><span>Sáb</span></div>
+                <div class="heatmap" id="heatmap" role="list" aria-label="Calendário semanal de contribuições"></div>
+              </div>
+            </div>
+            <div class="calendar-footer">
+              <span class="calendar-feedback" id="calendar-feedback" aria-live="polite"></span>
+              <div class="legend" aria-label="Legenda: menos para mais contribuições">
+                <span>Menos</span><i class="level-0"></i><i class="level-1"></i><i class="level-2"></i><i class="level-3"></i><i class="level-4"></i><span>Mais</span>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section class="page" id="settings-page" aria-labelledby="settings-heading" hidden>
+          <div class="intro-row">
+            <div>
+              <p class="eyebrow">PREFERÊNCIAS DO APLICATIVO</p>
+              <h2 class="section-title" id="settings-heading">Configurações</h2>
+              <p class="page-lead">Escolha como o Auto Committer inicia e permanece disponível.</p>
+            </div>
+          </div>
+          <section class="card settings-card" aria-label="Inicialização e bandeja">
+            <div class="settings-option">
+              <div>
+                <h3>Iniciar com o Windows</h3>
+                <p>Abre o aplicativo minimizado na bandeja quando você entrar no Windows.</p>
+                <span class="settings-value" id="startup-state">Conferindo o estado do Windows…</span>
+              </div>
+              <label class="switch" for="startup-toggle">
+                <input id="startup-toggle" type="checkbox" disabled>
+                <span class="switch-track" aria-hidden="true"></span>
+                <span class="visually-hidden">Iniciar com o Windows</span>
+              </label>
+            </div>
+            <div class="settings-option">
+              <div>
+                <h3>Fechar para a bandeja</h3>
+                <p>Ao clicar no X, oculta a janela sem interromper a automação. Use “Sair” no menu da bandeja para encerrar.</p>
+              </div>
+              <label class="switch" for="tray-toggle">
+                <input id="tray-toggle" type="checkbox" checked disabled>
+                <span class="switch-track" aria-hidden="true"></span>
+                <span class="visually-hidden">Fechar para a bandeja</span>
+              </label>
+            </div>
+            <p class="field-error settings-error" id="settings-error" aria-live="polite"></p>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <dialog class="confirm-dialog" id="confirm-dialog" aria-labelledby="confirm-title">
+      <form method="dialog">
+        <p class="eyebrow">CONFIRMAÇÃO</p>
+        <h2 id="confirm-title">Gerar esta contribuição?</h2>
+        <p class="dialog-description">Confira os detalhes antes de continuar.</p>
+        <dl class="confirm-summary">
+          <div><dt>Repositório</dt><dd id="confirm-repo"></dd></div>
+          <div><dt>Mensagem</dt><dd id="confirm-message"></dd></div>
+          <div><dt>Operação</dt><dd id="confirm-push"></dd></div>
+        </dl>
+        <div class="dialog-actions">
+          <button class="button button-secondary" value="cancel">Voltar</button>
+          <button class="button button-primary" id="confirm-submit" value="confirm">Confirmar e enviar</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog class="confirm-dialog timing-dialog" id="commit-timing-dialog" aria-labelledby="timing-title">
+      <form method="dialog">
+        <p class="eyebrow">INTERVALO DE AUTOMAÇÃO</p>
+        <h2 id="timing-title">Seu commit está próximo do próximo agendado</h2>
+        <p class="dialog-description" id="timing-message"></p>
+        <p class="callout">“Commitar agora” registra a contribuição e reinicia o intervalo. “Commitar depois” mantém o agendamento como está.</p>
+        <div class="dialog-actions">
+          <button class="button button-secondary" value="later">Commitar depois</button>
+          <button class="button button-primary" id="timing-commit-now" value="now">Commitar agora</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div class="toast-region" id="toast-region" role="status" aria-live="polite"></div>
+  </body>
+</html>
