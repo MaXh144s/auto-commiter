@@ -4,6 +4,7 @@ __pycache__/
 gerados/
 .venv/
 .vscode/
+tests/
 .pytest_cache/
 build/
 dist/
